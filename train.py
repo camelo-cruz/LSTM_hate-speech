@@ -5,62 +5,30 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from dataset import TextDataset
 import utils
+from model import LSTM
 
-# Set the device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Paths
 current_dir = os.getcwd()
 csv_path = os.path.join(current_dir, 'data', 'final_hateXplain.csv')
-
-# Preprocess data
-text_df, labels_df = utils.preprocess_data(csv_path)
-vocab = utils.build_vocab(text_df['comment'])
-indices = utils.convert_to_indices(text_df['comment'], vocab)
-padded = utils.pad_sequences(indices)
-print(padded)
+input_ids, attention_mask, labels = utils.preprocess_data(csv_path)
 
 # Define hyperparameters
 input_len = 128
-hidden_size = 128
+hidden_size = 256
 num_layers = 4
 num_classes = 3
 batch_size = 32
 num_epochs = 100
-learning_rate = 0.001
+learning_rate = 0.0001
+embedding_dim = 128
 
-# Instantiate the dataset and dataloader
-dataset = TextDataset(
-    text=text_df,
-    labels=labels_df,
-    bert_model_name='bert-base-uncased',
-    max_len=input_len
-)
-
+dataset = TextDataset(input_ids, attention_mask, labels)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-# Define the LSTM model
-class LSTM(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, hidden_size, num_layers, num_classes):
-        super(LSTM, self).__init__()
-        self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx=0)
-        self.lstm = nn.LSTM(
-            input_size=embedding_dim,
-            hidden_size=hidden_size,
-            num_layers=num_layers,
-            batch_first=True
-        )
-        self.fc = nn.Linear(hidden_size, num_classes)
-
-    def forward(self, input_ids):
-        x = self.embedding(input_ids)
-        output, (hidden, cell) = self.lstm(x)
-        out = self.fc(hidden[-1])
-        return out
-
 # Instantiate the model
-vocab_size = dataset.tokenizer.vocab_size
-embedding_dim = 128  # Can be adjusted
+vocab_size = utils.get_vocab_size()
 model = LSTM(
     vocab_size=vocab_size,
     embedding_dim=embedding_dim,

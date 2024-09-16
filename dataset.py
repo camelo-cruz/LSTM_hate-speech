@@ -3,17 +3,17 @@ import torch
 from transformers import BertTokenizer
 
 class TextDataset(Dataset):
-    def __init__(self, text, labels):
-        self.text = text.reset_index(drop=True)
-        self.labels = labels.reset_index(drop=True)
-
-        assert len(self.text) == len(self.labels)
+    def __init__(self, input_ids, attention_mask, labels):
+        self.input_ids = input_ids
+        self.attention_mask = attention_mask
+        self.labels = labels
 
     def __len__(self):
-        return len(self.text)
+        return len(self.labels)
 
     def __getitem__(self, idx):
-        text = self.text.iloc[idx]
-        label = self.labels.iloc[idx]
-
-        return text, label
+        return {
+            'input_ids': self.input_ids[idx],
+            'attention_mask': self.attention_mask[idx],
+            'labels': self.labels[idx]
+        }

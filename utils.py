@@ -1,21 +1,37 @@
 import pandas as pd
-import nltk
 import torch
+from transformers import BertTokenizer
+import nltk
 from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
-from collections import defaultdict
+import re
+import emoji
 
-# Download required resources
-nltk.download('punkt')
+
+# Detect if CUDA is available, else use CPU
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# Download required stopwords
 nltk.download('stopwords')
-nltk.download('wordnet')  # Download WordNet for lemmatization
-nltk.download('omw-1.4')  # Download additional WordNet resources
 
-# Set up stopwords in English and initialize lemmatizer
+# Initialize the BERT tokenizer from Hugging Face
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+
+# Load NLTK stopwords
 stop_words = set(stopwords.words('english'))
-lemmatizer = WordNetLemmatizer()
 
-def preprocess_data(csv_file):
+# Function to clean text by removing stopwords and numbers
+def clean_text(text):
+    # Tokenize the text into words
+    words = nltk.word_tokenize(text)
+
+    # Remove stopwords and words that contain digits
+    cleaned_words = [emoji.demojize(word) for word in words if word.lower() not in stop_words and not re.search(r'\d', word)]
+
+    # Join the cleaned words back into a single string
+    return ' '.join(cleaned_words)
+
+# Preprocessing function using BERT tokenizer
+def preprocess_data(csv_file, max_len=100):
     df = pd.read_csv(csv_file)
 
     # Separate the text column
@@ -33,29 +49,29 @@ def preprocess_data(csv_file):
     text_df = text_df.reset_index(drop=True)
     labels_df = labels_df.reset_index(drop=True)
 
-    # Tokenize the text column, remove stopwords, and lemmatize
-    text_df['comment'] = text_df['comment'].apply(
-        lambda x: [lemmatizer.lemmatize(word.lower()) for word in nltk.word_tokenize(x)
-                   if word.lower() not in stop_words and word.isalpha() and word != '']  # Exclude digits
+    # Clean the text by removing stopwords and numbers
+    text_df['comment'] = text_df['comment'].apply(clean_text)
+
+    # Use BERT tokenizer to tokenize, pad, and create attention masks
+    encoding = tokenizer(
+        text_df['comment'].tolist(),  # The list of cleaned comments
+        truncation=True,
+        padding='max_length',  # Pad to max_len
+        max_length=max_len,  # Max length of input tokens
+        return_tensors='pt',  # Return PyTorch tensors
+        return_attention_mask=True  # Return attention mask (for padding)
     )
 
-    return text_df, labels_df
+    input_ids = encoding['input_ids'].to(device)
+    attention_mask = encoding['attention_mask'].to(device)
+    labels = torch.tensor(labels_df.values, dtype=torch.long).to(device)
 
+    return input_ids, attention_mask, labels
 
-def build_vocab(tokenized_comments):
-    vocab = defaultdict(lambda: len(vocab))  # Automatically assigns indices to new words
-    vocab["<PAD>"] = 0  # Assign special index 0 for padding
-    for comment in tokenized_comments:
-        for word in comment:
-            vocab[word]  # Add word to vocab
-    return vocab
+def decode_input_ids(input_ids, skip_special_tokens=True):
+    # Use the tokenizer's decode method to convert token IDs back to text
+    decoded_text = tokenizer.decode(input_ids, skip_special_tokens=skip_special_tokens)
+    return decoded_text
 
-def convert_to_indices(tokenized_comments, vocab):
-    return [[vocab[word] for word in comment] for comment in tokenized_comments]
-
-def pad_sequences(sequences, max_len=100):
-    padded_sequences = torch.zeros((len(sequences), max_len), dtype=torch.long)  # Create tensor of zeros for padding
-    for i, seq in enumerate(sequences):
-        seq_len = min(len(seq), max_len)
-        padded_sequences[i, :seq_len] = torch.tensor(seq[:seq_len], dtype=torch.long)
-    return padded_sequences
+def get_vocab_size():
+    return tokenizer.vocab_size
