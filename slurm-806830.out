@@ -1,0 +1,8 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting emoji
+  Using cached emoji-2.12.1-py3-none-any.whl.metadata (5.4 kB)
+Requirement already satisfied: typing-extensions>=4.7.0 in /home/camelocruz/.local/lib/python3.8/site-packages (from emoji) (4.12.2)
+Using cached emoji-2.12.1-py3-none-any.whl (431 kB)
+WARNING: Error parsing dependencies of pyodbc: Invalid version: '4.0.0-unsupported'
+Installing collected packages: emoji
+Successfully installed emoji-2.12.1
