@@ -6,3 +6,30 @@ Using cached emoji-2.12.1-py3-none-any.whl (431 kB)
 WARNING: Error parsing dependencies of pyodbc: Invalid version: '4.0.0-unsupported'
 Installing collected packages: emoji
 Successfully installed emoji-2.12.1
+[nltk_data] Downloading package stopwords to
+[nltk_data]     /home/camelocruz/nltk_data...
+[nltk_data]   Package stopwords is already up-to-date!
+Current best accuracy: 0.9962 with params: (0.001, 32, 128, 2)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)
+Current best accuracy: 0.9993 with params: (0.001, 32, 128, 3)

@@ -16,12 +16,12 @@ input_ids, attention_mask, labels = utils.preprocess_data(csv_path)
 
 # Define hyperparameters
 input_len = 128
-hidden_size = 256
-num_layers = 4
+hidden_size = 128
+num_layers = 3
 num_classes = 3
 batch_size = 32
 num_epochs = 100
-learning_rate = 0.0001
+learning_rate = 0.001
 embedding_dim = 128
 
 dataset = TextDataset(input_ids, attention_mask, labels)
