@@ -1,6 +1,6 @@
 import os
 import torch
-import utils
+from .utils import preprocessing
 from itertools import product
 from model import LSTM
 import torch.optim as optim
@@ -9,12 +9,12 @@ from torch.utils.data import DataLoader
 from dataset import TextDataset
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 current_dir = os.getcwd()
 csv_path = os.path.join(current_dir, 'data', 'final_hateXplain.csv')
 
-input_ids, attention_mask, labels = utils.preprocess_data(csv_path)
-dataset = TextDataset(input_ids, attention_mask, labels)
+train_sample, test_sample = preprocessing.preprocess_data(csv_path, input_len)
+train_dataset = TextDataset(train_sample['input_ids'], train_sample['attention_mask'], train_sample['labels'])
+test_dataset = TextDataset(test_sample['input_ids'], test_sample['attention_mask'], test_sample['labels'])
 
 # Define hyperparameter ranges
 learning_rates = [1e-3, 1e-4, 1e-5]
@@ -29,7 +29,7 @@ param_combinations = list(product(learning_rates, batch_sizes, hidden_sizes, num
 best_accuracy = 0
 best_params = None
 
-vocab_size = utils.get_vocab_size()
+vocab_size = preprocessing.get_vocab_size()
 
 for params in param_combinations:
     learning_rate, batch_size, hidden_size, num_layers = params
@@ -43,7 +43,7 @@ for params in param_combinations:
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     
     # Define the DataLoader with the current batch size
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
     
     # Train the model (simplified version)
@@ -65,7 +65,7 @@ for params in param_combinations:
             _, preds = torch.max(outputs, dim=1)
             correct_predictions += torch.sum(preds == labels)
 
-        accuracy = correct_predictions.double() / len(dataset)
+        accuracy = correct_predictions.double() / len(train_dataset)
 
         # Check if current model is better
         if accuracy > best_accuracy:

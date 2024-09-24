@@ -4,17 +4,14 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from dataset import TextDataset
-import utils
+from utils import preprocessing
 from model import LSTM
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-# Paths
 current_dir = os.getcwd()
 csv_path = os.path.join(current_dir, 'data', 'final_hateXplain.csv')
-input_ids, attention_mask, labels = utils.preprocess_data(csv_path)
 
-# Define hyperparameters
+#define hyperparameters
 input_len = 128
 hidden_size = 128
 num_layers = 3
@@ -24,11 +21,13 @@ num_epochs = 100
 learning_rate = 0.001
 embedding_dim = 128
 
-dataset = TextDataset(input_ids, attention_mask, labels)
-dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+train_sample, test_sample = preprocessing.preprocess_data(csv_path, input_len)
+train_dataset = TextDataset(train_sample['input_ids'], train_sample['attention_mask'], train_sample['labels'])
+test_dataset = TextDataset(test_sample['input_ids'], test_sample['attention_mask'], test_sample['labels'])
+dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-# Instantiate the model
-vocab_size = utils.get_vocab_size()
+
+vocab_size = preprocessing.get_vocab_size()
 model = LSTM(
     vocab_size=vocab_size,
     embedding_dim=embedding_dim,
@@ -73,6 +72,6 @@ for epoch in range(num_epochs):
         correct_predictions += torch.sum(preds == labels)
 
     epoch_loss = running_loss / len(dataloader)
-    epoch_acc = correct_predictions.double() / len(dataset)
+    epoch_acc = correct_predictions.double() / len(train_dataset)
 
     print(f'Epoch {epoch+1}/{num_epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}')
