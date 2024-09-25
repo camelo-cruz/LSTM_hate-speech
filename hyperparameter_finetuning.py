@@ -30,7 +30,7 @@ learning_rates = [1e-3, 1e-4, 1e-5]
 batch_sizes = [32, 64]
 hidden_sizes = [128, 256]
 num_layers_list = [2, 3]
-num_epochs = 200
+num_epochs = 100
 
 # Define the combinations
 param_combinations = list(product(learning_rates, batch_sizes, hidden_sizes, num_layers_list, input_len))
