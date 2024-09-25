@@ -18,13 +18,13 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 current_dir = os.getcwd()
 csv_path = os.path.join(current_dir, 'data', 'final_hateXplain.csv')
 
-input_len = 128
-hidden_size = 128
-num_layers = 3
-num_classes = 3
-batch_size = 32
+learning_rate = 0.0001
+batch_size = 64
+hidden_size = 256
+num_layers = 2
+input_len = 32
 num_epochs = 100
-learning_rate = 0.001
+num_classes = 3
 embedding_dim = 128
 
 train_sample, test_sample = preprocessing.preprocess_data(csv_path, input_len)

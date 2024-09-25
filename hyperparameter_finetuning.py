@@ -25,11 +25,11 @@ train_accuracies = []
 test_accuracies = []
 
 # Define hyperparameter ranges
-input_len = [32]
 learning_rates = [1e-3, 1e-4, 1e-5]
 batch_sizes = [32, 64]
 hidden_sizes = [128, 256]
 num_layers_list = [2, 3]
+input_len = [32]
 num_epochs = 100
 
 # Define the combinations
@@ -49,7 +49,11 @@ for params in param_combinations:
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
     
-    model = LSTM(vocab_size=vocab_size, embedding_dim=128, hidden_size=hidden_size, num_layers=num_layers, num_classes=3)
+    model = LSTM(vocab_size=vocab_size, 
+                embedding_dim=128, 
+                hidden_size=hidden_size,
+                num_layers=num_layers, 
+                num_classes=3)
     model.to(device)
     
     criterion = nn.CrossEntropyLoss()
