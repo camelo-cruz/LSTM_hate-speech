@@ -1,11 +1,17 @@
 import os
 import torch
+import random
+import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from dataset import TextDataset
-from utils import preprocessing
+import preprocessing
 from model import LSTM
+
+torch.manual_seed(42)
+random.seed(42)
+np.random.seed(42)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 current_dir = os.getcwd()
@@ -24,7 +30,8 @@ embedding_dim = 128
 train_sample, test_sample = preprocessing.preprocess_data(csv_path, input_len)
 train_dataset = TextDataset(train_sample['input_ids'], train_sample['attention_mask'], train_sample['labels'])
 test_dataset = TextDataset(test_sample['input_ids'], test_sample['attention_mask'], test_sample['labels'])
-dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+test_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
 
 vocab_size = preprocessing.get_vocab_size()
@@ -48,7 +55,7 @@ for epoch in range(num_epochs):
     running_loss = 0.0
     correct_predictions = 0
 
-    for batch in dataloader:
+    for batch in train_dataloader:
         input_ids = batch['input_ids'].to(device)
         labels = batch['labels'].to(device)
 
@@ -71,7 +78,7 @@ for epoch in range(num_epochs):
         _, preds = torch.max(outputs, dim=1)
         correct_predictions += torch.sum(preds == labels)
 
-    epoch_loss = running_loss / len(dataloader)
+    epoch_loss = running_loss / len(train_dataloader)
     epoch_acc = correct_predictions.double() / len(train_dataset)
 
     print(f'Epoch {epoch+1}/{num_epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}')
