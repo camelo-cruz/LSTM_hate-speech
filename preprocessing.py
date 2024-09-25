@@ -1,5 +1,7 @@
 import pandas as pd
 import torch
+import random
+import numpy as np
 from transformers import BertTokenizer
 import nltk
 from nltk.corpus import stopwords
@@ -7,6 +9,10 @@ import re
 import emoji
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+
+torch.manual_seed(42)
+random.seed(42)
+np.random.seed(42)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
