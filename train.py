@@ -1,11 +1,19 @@
 import os
 import torch
+import random
+import preprocessing
+import numpy as np
 import torch.nn as nn
 import torch.optim as optim
+from plot import plot_train_test
 from torch.utils.data import DataLoader
 from dataset import TextDataset
-from utils import preprocessing
 from model import LSTM
+
+torch.manual_seed(42)
+random.seed(42)
+np.random.seed(42)
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 current_dir = os.getcwd()
@@ -24,7 +32,8 @@ embedding_dim = 128
 train_sample, test_sample = preprocessing.preprocess_data(csv_path, input_len)
 train_dataset = TextDataset(train_sample['input_ids'], train_sample['attention_mask'], train_sample['labels'])
 test_dataset = TextDataset(test_sample['input_ids'], test_sample['attention_mask'], test_sample['labels'])
-dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 
 vocab_size = preprocessing.get_vocab_size()
@@ -38,24 +47,26 @@ model = LSTM(
 
 model.to(device)
 
+train_losses = []
+test_losses = []
+train_accuracies = []
+test_accuracies = []
+
 # Loss function and optimizer
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-# Training loop
 for epoch in range(num_epochs):
     model.train()
-    running_loss = 0.0
-    correct_predictions = 0
+    running_train_loss = 0.0
+    correct_train_predictions = 0
 
-    for batch in dataloader:
+    for batch in train_dataloader:
         input_ids = batch['input_ids'].to(device)
         labels = batch['labels'].to(device)
 
-        # Zero the parameter gradients
         optimizer.zero_grad()
 
-        # Forward pass
         outputs = model(input_ids)
 
         # Compute loss
@@ -65,13 +76,43 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
 
-        running_loss += loss.item()
+        running_train_loss += loss.item()
 
         # Compute accuracy
         _, preds = torch.max(outputs, dim=1)
-        correct_predictions += torch.sum(preds == labels)
+        correct_train_predictions += torch.sum(preds == labels)
 
-    epoch_loss = running_loss / len(dataloader)
-    epoch_acc = correct_predictions.double() / len(train_dataset)
+    # Compute and store training loss and accuracy
+    epoch_train_loss = running_train_loss / len(train_dataloader)
+    epoch_train_acc = correct_train_predictions.double() / len(train_dataset)
+    train_losses.append(epoch_train_loss)
+    train_accuracies.append(epoch_train_acc.item())
 
-    print(f'Epoch {epoch+1}/{num_epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}')
+    # Validation/Test
+    model.eval()
+    running_test_loss = 0.0
+    correct_test_predictions = 0
+
+    with torch.no_grad():
+        for batch in test_dataloader:
+            input_ids = batch['input_ids'].to(device)
+            labels = batch['labels'].to(device)
+
+            outputs = model(input_ids)
+
+            loss = criterion(outputs, labels)
+            running_test_loss += loss.item()
+
+            _, preds = torch.max(outputs, dim=1)
+            correct_test_predictions += torch.sum(preds == labels)
+
+    epoch_test_loss = running_test_loss / len(test_dataloader)
+    epoch_test_acc = correct_test_predictions.double() / len(test_dataset)
+    test_losses.append(epoch_test_loss)
+    test_accuracies.append(epoch_test_acc.item())
+
+    print(f'Epoch {epoch+1}/{num_epochs}, '
+          f'Train Loss: {epoch_train_loss:.4f}, Train Accuracy: {epoch_train_acc:.4f}, '
+          f'Test Loss: {epoch_test_loss:.4f}, Test Accuracy: {epoch_test_acc:.4f}')
+
+plot_train_test(train_accuracies, test_accuracies, train_losses, test_losses, 'train metrics')

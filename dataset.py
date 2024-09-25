@@ -15,5 +15,5 @@ class TextDataset(Dataset):
         return {
             'input_ids': self.input_ids[idx],
             'attention_mask': self.attention_mask[idx],
-            'labels': self.labels[idx]
+            'labels': self.labels[idx],
         }
