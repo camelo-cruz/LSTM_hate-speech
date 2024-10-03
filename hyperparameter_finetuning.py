@@ -24,23 +24,22 @@ test_losses = []
 train_accuracies = []
 test_accuracies = []
 
-# Define hyperparameter ranges
 learning_rates = [1e-3, 1e-4, 1e-5]
 batch_sizes = [32, 64]
 hidden_sizes = [128, 256]
-num_layers_list = [2, 3]
+num_layers_list = [2, 3, 4 ,5]
 input_len = [32]
 num_epochs = 100
-
-# Define the combinations
-param_combinations = list(product(learning_rates, batch_sizes, hidden_sizes, num_layers_list, input_len))
-
-best_accuracy = 0
-best_params = None
-
 vocab_size = preprocessing.get_vocab_size()
 
+param_combinations = list(product(learning_rates, batch_sizes, hidden_sizes, num_layers_list, input_len))
+
+best_loss = float('inf')
+run = 0
+best_params = None
+
 for params in param_combinations:
+    run += 1
     learning_rate, batch_size, hidden_size, num_layers, input_len = params
 
     train_sample, test_sample = preprocessing.preprocess_data(csv_path, input_len)
@@ -78,16 +77,15 @@ for params in param_combinations:
             _, preds = torch.max(outputs, dim=1)
             correct_train_predictions += torch.sum(preds == labels)
 
-        accuracy_train = correct_train_predictions.double() / len(train_dataset)
-        loss_train = running_train_loss / len(train_dataloader)
+        epoch_train_acc = correct_train_predictions.double() / len(train_dataset)
+        epoch_train_loss = running_train_loss / len(train_dataloader)
 
-        train_losses.append(loss_train)
-        train_accuracies.append(accuracy_train.item())
+        train_accuracies.append(epoch_train_acc.item())
+        train_losses.append(epoch_train_loss)
 
         model.eval()
         running_test_loss = 0.0
         correct_test_predictions = 0
-
         with torch.no_grad():
             for batch in test_dataloader:
                 input_ids = batch['input_ids'].to(device)
@@ -101,18 +99,21 @@ for params in param_combinations:
                 _, preds = torch.max(outputs, dim=1)
                 correct_test_predictions += torch.sum(preds == labels)
 
-        epoch_test_loss = running_test_loss / len(test_dataloader)
         epoch_test_acc = correct_test_predictions.double() / len(test_dataset)
+        epoch_test_loss = running_test_loss / len(test_dataloader)
 
-        test_losses.append(epoch_test_loss)
         test_accuracies.append(epoch_test_acc.item())
+        test_losses.append(epoch_test_loss)
 
-        print(f'Epoch {epoch+1}/{num_epochs}, '
-            f'Train Loss: {loss_train:.4f}, Train Accuracy: {accuracy_train:.4f}, '
-            f'Test Loss: {epoch_test_loss:.4f}, Test Accuracy: {epoch_test_acc:.4f}')
+        if run == 0:
+            best_loss = epoch_test_loss 
 
-        if epoch_test_acc > best_accuracy:
-            best_accuracy = epoch_test_acc
+        if epoch_test_loss < best_loss:
+            best_loss = epoch_test_loss
             best_params = params
 
-    print(f"Current best accuracy: {best_accuracy:.4f} with params: {best_params}")
+    print(f'run {run} '
+          f'Train Loss: {epoch_train_loss:.4f}, Train Accuracy: {epoch_train_acc:.4f}, '
+          f'Test Loss: {epoch_test_loss:.4f}, Test Accuracy: {epoch_test_acc:.4f}')
+
+    print(f"Current best accuracy: {best_loss:.4f} with params: {best_params}")
