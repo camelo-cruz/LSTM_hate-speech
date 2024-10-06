@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --mem=20G                     # Memory requirement
-#SBATCH --gpus=3                      # Request 3 GPUs
+#SBATCH --mem=30G                     # Memory requirement
+#SBATCH --gpus=4                      # Request 3 GPUs
 #SBATCH -p gpu                        # Use the GPU partition
 
 module load lang/Anaconda3/2020.11

@@ -2,13 +2,14 @@ import os
 import torch
 import random
 import numpy as np
+import preprocessing
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from dataset import TextDataset
-from plot import plot_train_test, plot_confusion_matrix, plot_data_distribution
-import preprocessing
+from sklearn.metrics import f1_score
 from model import LSTM
+from plot import plot_train_test, plot_confusion_matrix, plot_data_distribution
 
 torch.manual_seed(42)
 random.seed(42)
@@ -19,32 +20,30 @@ current_dir = os.getcwd()
 csv_path = os.path.join(current_dir, 'data', 'final_hateXplain.csv')
 
 learning_rate = 0.001
-batch_size = 64
+batch_size = 30
 hidden_size = 128
 num_layers = 3
 input_len = 32
-num_epochs = 100
+num_epochs = 50
 num_classes = 3
-embedding_dim = 128
-
-vocab_size = preprocessing.get_vocab_size()
 
 train_losses = []
 test_losses = []
 train_accuracies = []
 test_accuracies = []
+test_f1s = []
 y_true = []
 y_pred = []
 
 train_sample, test_sample = preprocessing.preprocess_data(csv_path, input_len)
-train_dataset = TextDataset(train_sample['input_ids'], train_sample['attention_mask'], train_sample['labels'])
-test_dataset = TextDataset(test_sample['input_ids'], test_sample['attention_mask'], test_sample['labels'])
+train_dataset = TextDataset(train_sample['input_ids'], train_sample['mask'], train_sample['labels'])
+test_dataset = TextDataset(test_sample['input_ids'], test_sample['mask'], test_sample['labels'])
 plot_data_distribution(train_sample['labels'], test_sample['labels'], ['Class 0', 'Class 1', 'Class 2'])
+
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
     
-model = LSTM(vocab_size=vocab_size, 
-            embedding_dim=128, 
+model = LSTM(input_size=768,
             hidden_size=hidden_size, 
             num_layers=num_layers, 
             num_classes=3)
@@ -60,11 +59,11 @@ for epoch in range(num_epochs):
     correct_train_predictions = 0
 
     for batch in train_dataloader:
-        input_ids = batch['input_ids'].to(device)
-        labels = batch['labels'].to(device)
+        embeddings = preprocessing.get_bert_embeddings(batch['input_ids'], batch['mask']).to(device)
+        labels = batch['labels']
 
         optimizer.zero_grad()
-        outputs = model(input_ids)            
+        outputs = model(embeddings)            
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
@@ -82,13 +81,15 @@ for epoch in range(num_epochs):
     model.eval()
     running_test_loss = 0.0
     correct_test_predictions = 0
+    y_true = []
+    y_pred = []
 
     with torch.no_grad():
         for batch in test_dataloader:
-            input_ids = batch['input_ids'].to(device)
+            embeddings = preprocessing.get_bert_embeddings(batch['input_ids'], batch['mask']).to(device)
             labels = batch['labels'].to(device)
 
-            outputs = model(input_ids)
+            outputs = model(embeddings)
 
             loss = criterion(outputs, labels)
             running_test_loss += loss.item()
@@ -96,17 +97,24 @@ for epoch in range(num_epochs):
             _, preds = torch.max(outputs, dim=1)
             correct_test_predictions += torch.sum(preds == labels)
 
+            y_true.extend(labels.cpu().numpy())
+            y_pred.extend(preds.cpu().numpy())
+
     epoch_test_acc = correct_test_predictions.double() / len(test_dataset)
     epoch_test_loss = running_test_loss / len(test_dataloader)
+    epoch_f1_score = f1_score(y_true, y_pred, average='weighted')
 
     test_accuracies.append(epoch_test_acc.item())
     test_losses.append(epoch_test_loss)
+    test_f1s.append(epoch_f1_score)
+
 
     print(f'Epoch {epoch+1}/{num_epochs}, '
-        f'Train Loss: {epoch_train_loss:.4f}, Train Accuracy: {epoch_train_acc:.4f}, '
-        f'Test Loss: {epoch_test_loss:.4f}, Test Accuracy: {epoch_test_acc:.4f}')
+          f'Train Loss: {epoch_train_loss:.4f}, Train Accuracy: {epoch_train_acc:.4f}, '
+          f'Test Loss: {epoch_test_loss:.4f}, Test Accuracy: {epoch_test_acc:.4f}, '
+          f'F1 Score: {epoch_f1_score:.4f}')
 
-plot_train_test(train_accuracies, test_accuracies, train_losses, test_losses, 'loss_acc_train')
+plot_train_test(train_accuracies, test_accuracies, train_losses, test_losses, test_f1s, 'loss_acc_train')
 
 model.eval()
 y_true = []
@@ -114,10 +122,10 @@ y_pred = []
 
 with torch.no_grad():
     for batch in test_dataloader:
-        input_ids = batch['input_ids'].to(device)
+        embeddings = preprocessing.get_bert_embeddings(batch['input_ids'], batch['mask']).to(device)
         labels = batch['labels'].to(device)
 
-        outputs = model(input_ids)
+        outputs = model(embeddings)
         _, preds = torch.max(outputs, dim=1)
 
         y_true.extend(labels.cpu().numpy())

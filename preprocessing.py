@@ -2,7 +2,7 @@ import pandas as pd
 import torch
 import random
 import numpy as np
-from transformers import BertTokenizer
+from transformers import BertTokenizer, BertModel
 import nltk
 from nltk.corpus import stopwords
 import re
@@ -19,6 +19,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 nltk.download('stopwords')
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+bert_model = BertModel.from_pretrained('bert-base-uncased').to(device)
+bert_model.eval()
 
 stop_words = set(stopwords.words('english'))
 
@@ -29,7 +31,12 @@ def clean_text(text):
 
     return ' '.join(cleaned_words)
 
-def preprocess_data(csv_file, max_len=100, test_size=0.3):
+def get_bert_embeddings(input_ids, attention_mask):
+    with torch.no_grad():
+        outputs = bert_model(input_ids=input_ids, attention_mask=attention_mask)
+        return outputs.last_hidden_state
+
+def preprocess_data(csv_file, max_len=100):
     df = pd.read_csv(csv_file)
 
     text_df = df[['comment']].copy()
@@ -73,25 +80,20 @@ def preprocess_data(csv_file, max_len=100, test_size=0.3):
     test_attention_mask = test_encoding['attention_mask'].to(device)
     test_labels = torch.tensor(test_labels.values, dtype=torch.long).to(device)
 
-
     train_sample = {
         'input_ids': train_input_ids, 
-        'attention_mask': train_attention_mask, 
         'labels': train_labels,
+        'mask': train_attention_mask
     }
 
     test_sample = {
         'input_ids': test_input_ids, 
-        'attention_mask': test_attention_mask, 
         'labels': test_labels,
+        'mask': test_attention_mask
     }
 
     return train_sample, test_sample
 
-
 def decode_input_ids(input_ids, skip_special_tokens=True):
     decoded_text = tokenizer.decode(input_ids, skip_special_tokens=skip_special_tokens)
     return decoded_text
-
-def get_vocab_size():
-    return tokenizer.vocab_size

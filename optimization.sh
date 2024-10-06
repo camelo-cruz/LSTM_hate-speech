@@ -10,5 +10,5 @@ source activate lstm
 export http_proxy=http://proxy2.uni-potsdam.de:3128
 export https_proxy=http://proxy2.uni-potsdam.de:3128
 
-python hyperparameter_finetuning.py
+python hyperparameter_optimization.py
 
