@@ -20,9 +20,9 @@ current_dir = os.getcwd()
 csv_path = os.path.join(current_dir, 'data', 'final_hateXplain.csv')
 
 learning_rate = 0.001
-batch_size = 30
-hidden_size = 128
-num_layers = 3
+batch_size = 16
+hidden_size = 256
+num_layers = 5
 input_len = 32
 num_epochs = 50
 num_classes = 3
